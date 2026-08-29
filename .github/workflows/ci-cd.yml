@@ -24,9 +24,9 @@ jobs:
     - name: Build Docker Image (M3)
       run: docker build -t mlops-service:latest .
       
-    - name: Local CD & Smoke Test (M4)
+    - name: Run docker-compose
       run: |
-        docker-compose up -d
+        docker compose up -d
         sleep 5
         python smoke_test.py
-        docker-compose down
+        docker compose down
