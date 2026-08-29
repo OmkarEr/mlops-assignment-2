@@ -1,0 +1,7 @@
+version: '3.8'
+services:
+  inference_service:
+    build: .
+    ports:
+      - "8000:8000"
+    container_name: cats_dogs_api
