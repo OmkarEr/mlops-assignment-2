@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+tensorflow-cpu==2.16.1
+mlflow
+pytest
+httpx
+python-multipart
+dvc
+pillow
+kagglehub
