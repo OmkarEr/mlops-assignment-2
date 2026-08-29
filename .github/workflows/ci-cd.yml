@@ -18,8 +18,8 @@ jobs:
     - name: Install dependencies
       run: pip install -r requirements.txt
       
-    - name: Run Tests (M3)
-      run: pytest tests/test_app.py
+    - name: Run tests
+      run: PYTHONPATH=. pytest tests/test_app.py
       
     - name: Build Docker Image (M3)
       run: docker build -t mlops-service:latest .
