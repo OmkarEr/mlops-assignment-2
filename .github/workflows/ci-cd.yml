@@ -4,6 +4,11 @@ on:
   push:
     branches: [ "main" ]
 
+# Grant permissions to push to GitHub Packages (GHCR)
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -17,16 +22,30 @@ jobs:
         
     - name: Install dependencies
       run: pip install -r requirements.txt
-      
+        
     - name: Run tests
       run: PYTHONPATH=. pytest tests/test_app.py
-      
+        
     - name: Build Docker Image (M3)
       run: docker build -t mlops-service:latest .
-      
-    - name: Run docker-compose
+        
+    - name: Run docker-compose (M4 Smoke Test)
       run: |
         docker compose up -d
         sleep 5
         python smoke_test.py
         docker compose down
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Push to GHCR (M3.3 Artifact Publishing)
+      run: |
+        # Convert repository name to lowercase (Docker requirement)
+        REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+        docker tag mlops-service:latest ghcr.io/$REPO/mlops-service:latest
+        docker push ghcr.io/$REPO/mlops-service:latest

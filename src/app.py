@@ -1,4 +1,5 @@
 import logging
+import time
 from fastapi import FastAPI, UploadFile, File
 import tensorflow as tf
 from PIL import Image
@@ -11,7 +12,9 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
-# Load model (using a try-except so CI passes even if training didn't run yet)
+# Global metrics counters
+REQUEST_COUNT = 0
+
 try:
     model = tf.keras.models.load_model("model.h5")
 except:
@@ -24,7 +27,12 @@ def health_check():
 
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
-    logger.info(f"Prediction requested for file: {file.filename}")
+    global REQUEST_COUNT
+    REQUEST_COUNT += 1
+    start_time = time.time()
+    
+    logger.info(f"Prediction requested for file: {file.filename} (Total Requests: {REQUEST_COUNT})")
+    
     image = Image.open(io.BytesIO(await file.read())).resize((224, 224))
     img_array = np.array(image) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
@@ -32,5 +40,15 @@ async def predict(file: UploadFile = File(...)):
     if model:
         pred = model.predict(img_array)
         class_label = "Dog" if pred[0][0] > 0.5 else "Cat"
-        return {"label": class_label, "probability": float(pred[0][0])}
+        
+        latency = time.time() - start_time
+        logger.info(f"Prediction complete in {latency:.4f}s. Result: {class_label}")
+        
+        return {
+            "label": class_label, 
+            "probability": float(pred[0][0]),
+            "latency": latency,
+            "total_requests": REQUEST_COUNT
+        }
+        
     return {"error": "Model not found. Run train.py first."}
